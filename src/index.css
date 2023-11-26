@@ -43,3 +43,13 @@
 @import url(../src/blocks/popup/_is-opened/popup_is-opened.css);
 @import url(../src/blocks/footer/footer.css);
 @import url(../src/blocks/footer/__text/footer__text.css);
+@import url(../src/blocks/register/register.css);
+@import url(../src/blocks/register/__form/register__form.css);
+@import url(../src/blocks/register/__input/register__input.css);
+@import url(../src/blocks/register/__submitbtn/register__submitbtn.css);
+@import url(../src/blocks/register/__title/register__title.css);
+@import url(../src/blocks/register/__span/register__span.css);
+@import url(../src/blocks/register/__link/register__link.css);
+@import url(../src/blocks/infotooltip/infotooltip.css);
+@import url(../src/blocks/infotooltip/__img/infotooltip__img.css);
+@import url(../src/blocks/infotooltip/__text/infotooltip__text.css);

@@ -138,7 +138,7 @@ function App() {
           <Route
             path="/"
             element={
-              loggedIn ? <Navigate to="/main" replace /> : <Navigate to="/sign-in" replace />
+              loggedIn ? <Navigate to="/main" replace /> : <Navigate to="/sign-up" replace />
             }
           />
           <Route
