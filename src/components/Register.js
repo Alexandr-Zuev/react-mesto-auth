@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import * as auth from '../auth.js';
 import InfoTooltip from './InfoTooltip';
 
@@ -8,8 +8,7 @@ const Register = () => {
     email: '',
     password: ''
   });
-  const navigate = useNavigate();
-  const [isInfoTooltipOpen, setIsInfoTooltipOpen] = useState(false);
+  const [infoTooltip, setinfoTooltip] = useState({ isOpen: false, state: 'fail' });
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -22,23 +21,21 @@ const Register = () => {
 
   const handleSubmit = e => {
     e.preventDefault();
-    auth
-      .signUp(formValue.email, formValue.password)
-      .then(res => {
-        console.log(res.data);
-        if (res.data) {
-          navigate('/sign-in', { replace: true });
-        } else {
-          setIsInfoTooltipOpen(true);
-        }
-      })
-      .catch(error => {
-        console.error('Signup error:', error);
-      });
+    auth.signUp(formValue.email, formValue.password).then(res => {
+      if (res.data) {
+        setinfoTooltip({ isOpen: true, state: 'success' });
+        setFormValue({
+          email: '',
+          password: ''
+        });
+      } else {
+        setinfoTooltip({ isOpen: true, state: 'fail' });
+      }
+    });
   };
 
   const handleCloseInfoTooltip = () => {
-    setIsInfoTooltipOpen(false);
+    setinfoTooltip({ isOpen: false, state: 'fail' });
   };
 
   return (
@@ -73,7 +70,11 @@ const Register = () => {
           </Link>
         </p>
       </form>
-      <InfoTooltip onClose={handleCloseInfoTooltip} state="fail" isOpen={isInfoTooltipOpen} />
+      <InfoTooltip
+        onClose={handleCloseInfoTooltip}
+        isOpen={infoTooltip.isOpen}
+        state={infoTooltip.state}
+      />
     </div>
   );
 };

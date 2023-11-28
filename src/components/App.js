@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import CurrentUserContext from '../contexts/CurrentUserContext.js';
 import { api } from '../utils/api.js';
 import Header from './Header';
@@ -11,6 +11,8 @@ import EditAvatarPopup from './EditAvatarPopup';
 import AddPlacePopup from './AddPlacePopup';
 import Login from './Login';
 import Register from './Register';
+import ProtectedRouteElement from './ProtectedRoute';
+import * as auth from '../auth.js';
 
 function App() {
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
@@ -19,6 +21,9 @@ function App() {
   const [cards, setCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isImagePopupOpen, setImagePopupOpen] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const onEditProfile = () => {
     setIsEditProfilePopupOpen(true);
@@ -128,12 +133,76 @@ function App() {
   };
 
   const [loggedIn, setLoggedIn] = useState(false);
+  const handleLogin = () => {
+    setLoggedIn(true);
+  };
+
+  const [headerNav, setHeaderNav] = useState('');
+
+  const [mail, setMail] = useState('');
+
+  useEffect(() => {
+    switch (location.pathname) {
+      case '/main':
+        setHeaderNav(
+          <div className="header__group">
+            <p className="header__email">{mail}</p>
+            <button onClick={signOut} className="header__text">
+              Выйти
+            </button>
+          </div>
+        );
+        break;
+      case '/sign-in':
+        setHeaderNav(
+          <a className="header__text" href="/sign-up">
+            Регистрация
+          </a>
+        );
+        break;
+      case '/sign-up':
+        setHeaderNav(
+          <a className="header__text" href="/sign-in">
+            Войти
+          </a>
+        );
+        break;
+      default:
+        setHeaderNav('');
+        break;
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    handleTokenCheck();
+  }, []);
+
+  const handleTokenCheck = () => {
+    if (localStorage.getItem('jwt')) {
+      const jwt = localStorage.getItem('jwt');
+      auth.checkToken(jwt).then(res => {
+        if (res) {
+          setLoggedIn(true);
+          setMail(res.data.email);
+          navigate('/main', { replace: true });
+        }
+      });
+    }
+  };
+
+  function signOut() {
+    localStorage.removeItem('jwt');
+    navigate('/sign-in');
+  }
+
+  const handleEmailChange = value => {
+    setMail(value);
+  };
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
-        <Header />
-
+        <Header headerNav={headerNav} />
         <Routes>
           <Route
             path="/"
@@ -144,7 +213,8 @@ function App() {
           <Route
             path="/main"
             element={
-              <Main
+              <ProtectedRouteElement
+                element={Main}
                 handleEditProfileClick={onEditProfile}
                 handleAddPlaceClick={onAddPlace}
                 handleEditAvatarClick={onEditAvatar}
@@ -152,10 +222,14 @@ function App() {
                 handleCardClick={handleCardClick}
                 handleLikeClick={handleCardLike}
                 handleDeleteClick={handleCardDelete}
+                loggedIn={loggedIn}
               />
             }
           />
-          <Route path="/sign-in" element={<Login />} />
+          <Route
+            path="/sign-in"
+            element={<Login handleLogin={handleLogin} setemail={handleEmailChange} />}
+          />
           <Route path="/sign-up" element={<Register />} />
         </Routes>
 
@@ -175,7 +249,6 @@ function App() {
           onAddPlace={handleAddPlaceSubmit}
         />
         <ImagePopup isOpen={isImagePopupOpen} card={selectedCard} onClose={closeAllPopups} />
-
         <Footer />
       </div>
     </CurrentUserContext.Provider>

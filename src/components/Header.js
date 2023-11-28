@@ -1,10 +1,11 @@
 import React from 'react';
 import headerLogo from '../images/logo.svg';
 
-function Header() {
+function Header({ headerNav }) {
   return (
     <div className="header">
       <img className="logo" src={headerLogo} alt="Место" />
+      {headerNav}
     </div>
   );
 }
