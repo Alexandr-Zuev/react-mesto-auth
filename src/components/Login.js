@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 import { useNavigate} from 'react-router-dom';
-import * as auth from '../auth.js';
+import * as auth from '../utils/auth.js';
 
-  const Login = ({handleLogin, setemail}) => {
+  const Login = ({handleLogin, setEmail}) => {
     const [formValue, setFormValue] = useState({
       email: '',
       password: ''
@@ -27,7 +27,7 @@ import * as auth from '../auth.js';
           if (res.token) {
             setFormValue({ email: '', password: '' });
             handleLogin();
-            setemail(formValue.email);
+            setEmail(formValue.email);
             navigate('/main', { replace: true });
           }
         })

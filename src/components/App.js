@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import CurrentUserContext from '../contexts/CurrentUserContext.js';
 import { api } from '../utils/api.js';
+import * as auth from '../utils/auth.js';
 import Header from './Header';
 import Main from './Main';
 import Footer from './Footer';
@@ -12,7 +13,6 @@ import AddPlacePopup from './AddPlacePopup';
 import Login from './Login';
 import Register from './Register';
 import ProtectedRouteElement from './ProtectedRoute';
-import * as auth from '../auth.js';
 
 function App() {
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
@@ -21,9 +21,40 @@ function App() {
   const [cards, setCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isImagePopupOpen, setImagePopupOpen] = useState(false);
-
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [mail, setMail] = useState('');
+  const [currentUser, setCurrentUser] = useState({});
   const navigate = useNavigate();
-  const location = useLocation();
+
+  useEffect(() => {
+    if (loggedIn) {
+      api
+        .getInitialCards()
+        .then(cards => {
+          setCards(cards);
+        })
+        .catch(error => {
+          console.error('Ошибка при загрузке данных:', error);
+        });
+    }
+  }, [loggedIn]);
+
+  useEffect(() => {
+    if (loggedIn) {
+      api
+        .getUserInfo()
+        .then(userInfo => {
+          setCurrentUser(userInfo);
+        })
+        .catch(error => {
+          console.error('Ошибка при получении информации о пользователе:', error);
+        });
+    }
+  }, [loggedIn]);
+
+  useEffect(() => {
+    handleTokenCheck();
+  }, []);
 
   const onEditProfile = () => {
     setIsEditProfilePopupOpen(true);
@@ -48,53 +79,6 @@ function App() {
     setIsAddPlacePopupOpen(false);
     setSelectedCard(null);
   };
-
-  useEffect(() => {
-    api
-      .getInitialCards()
-      .then(cards => {
-        setCards(cards);
-      })
-      .catch(error => {
-        console.error('Ошибка при загрузке данных:', error);
-      });
-  }, []);
-
-  const [currentUser, setCurrentUser] = useState({});
-
-  useEffect(() => {
-    api
-      .getUserInfo()
-      .then(userInfo => {
-        setCurrentUser(userInfo);
-      })
-      .catch(error => {
-        console.error('Ошибка при получении информации о пользователе:', error);
-      });
-  }, []);
-
-  function handleCardLike(card) {
-    const isLiked = card.likes.some(i => i._id === currentUser._id);
-    api
-      .changeLikeCardStatus(card._id, !isLiked)
-      .then(newCard => {
-        setCards(state => state.map(c => (c._id === card._id ? newCard : c)));
-      })
-      .catch(error => {
-        console.error('Произошла ошибка при обновлении состояния карточек:', error);
-      });
-  }
-
-  function handleCardDelete(card) {
-    api
-      .deleteCard(card._id)
-      .then(() => {
-        setCards(currentCards => currentCards.filter(c => c._id !== card._id));
-      })
-      .catch(error => {
-        console.error('Ошибка при удалении карточки:', error);
-      });
-  }
 
   const handleUpdateUser = userInfo => {
     api
@@ -132,50 +116,13 @@ function App() {
       });
   };
 
-  const [loggedIn, setLoggedIn] = useState(false);
+  const handleEmailChange = value => {
+    setMail(value);
+  };
+
   const handleLogin = () => {
     setLoggedIn(true);
   };
-
-  const [headerNav, setHeaderNav] = useState('');
-
-  const [mail, setMail] = useState('');
-
-  useEffect(() => {
-    switch (location.pathname) {
-      case '/main':
-        setHeaderNav(
-          <div className="header__group">
-            <p className="header__email">{mail}</p>
-            <button onClick={signOut} className="header__text">
-              Выйти
-            </button>
-          </div>
-        );
-        break;
-      case '/sign-in':
-        setHeaderNav(
-          <a className="header__text" href="/sign-up">
-            Регистрация
-          </a>
-        );
-        break;
-      case '/sign-up':
-        setHeaderNav(
-          <a className="header__text" href="/sign-in">
-            Войти
-          </a>
-        );
-        break;
-      default:
-        setHeaderNav('');
-        break;
-    }
-  }, [location.pathname]);
-
-  useEffect(() => {
-    handleTokenCheck();
-  }, []);
 
   const handleTokenCheck = () => {
     if (localStorage.getItem('jwt')) {
@@ -190,19 +137,33 @@ function App() {
     }
   };
 
-  function signOut() {
-    localStorage.removeItem('jwt');
-    navigate('/sign-in');
+  function handleCardLike(card) {
+    const isLiked = card.likes.some(i => i._id === currentUser._id);
+    api
+      .changeLikeCardStatus(card._id, !isLiked)
+      .then(newCard => {
+        setCards(state => state.map(c => (c._id === card._id ? newCard : c)));
+      })
+      .catch(error => {
+        console.error('Произошла ошибка при обновлении состояния карточек:', error);
+      });
   }
 
-  const handleEmailChange = value => {
-    setMail(value);
-  };
+  function handleCardDelete(card) {
+    api
+      .deleteCard(card._id)
+      .then(() => {
+        setCards(currentCards => currentCards.filter(c => c._id !== card._id));
+      })
+      .catch(error => {
+        console.error('Ошибка при удалении карточки:', error);
+      });
+  }
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
-        <Header headerNav={headerNav} />
+        <Header mail={mail} />
         <Routes>
           <Route
             path="/"
@@ -228,7 +189,7 @@ function App() {
           />
           <Route
             path="/sign-in"
-            element={<Login handleLogin={handleLogin} setemail={handleEmailChange} />}
+            element={<Login handleLogin={handleLogin} setEmail={handleEmailChange} />}
           />
           <Route path="/sign-up" element={<Register />} />
         </Routes>
